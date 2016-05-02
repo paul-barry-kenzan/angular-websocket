@@ -82,6 +82,7 @@
     };
 
     $WebSocket.prototype._normalCloseCode = 1000;
+    $WebSocket.prototype._notAuthenticatedCloseCode = 1008;
 
     $WebSocket.prototype._reconnectableStatusCodes = [
       4000
@@ -186,7 +187,7 @@
 
     $WebSocket.prototype._onCloseHandler = function _onCloseHandler(event) {
       this.notifyCloseCallbacks(event);
-      if ((this.reconnectIfNotNormalClose && event.code !== this._normalCloseCode) || this._reconnectableStatusCodes.indexOf(event.code) > -1) {
+      if ((this.reconnectIfNotNormalClose && event.code !== this._normalCloseCode && event.code !== this._notAuthenticatedCloseCode) || this._reconnectableStatusCodes.indexOf(event.code) > -1) {
         this.reconnect();
       }
     };
@@ -231,6 +232,11 @@
 
     $WebSocket.prototype.close = function close(force) {
       if (force || !this.socket.bufferedAmount) {
+
+        if (force) {
+          this.reconnectIfNotNormalClose = false;
+        }
+
         this.socket.close();
       }
       return this;
@@ -283,7 +289,6 @@
       var backoffDelay = this._getBackoffDelay(++this._reconnectAttempts);
 
       var backoffDelaySeconds = backoffDelay / 1000;
-      console.log('Reconnecting in ' + backoffDelaySeconds + ' seconds');
 
       $timeout(angular.bind(this, this._connect), backoffDelay);
 
